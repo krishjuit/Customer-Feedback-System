@@ -146,6 +146,20 @@ def clean_text(text):
             
     return " ".join(cleaned_tokens)
 
+# --- Streamlit Safe Cache Wrapper ---
+try:
+    import streamlit as st
+    cache_data = st.cache_data
+except ImportError:
+    def cache_data(func):
+        return func
+
+@cache_data
+def clean_text_list(texts):
+    # Convert series or array to list to ensure clean caching behavior
+    texts_list = list(texts)
+    return [clean_text(t) for t in texts_list]
+
 # --- Sentiment Classifier Pipeline ---
 class SentimentModel:
     def __init__(self, model_type='Logistic Regression', C=1.0, alpha=0.5):
@@ -171,7 +185,7 @@ class SentimentModel:
         self.classes = []
 
     def train(self, texts, labels):
-        cleaned_texts = [clean_text(t) for t in texts]
+        cleaned_texts = clean_text_list(texts)
         labels = np.array(labels)
         
         # 1. Split into 80% train and 20% test to compute clean, unbiased metrics
@@ -226,7 +240,7 @@ class TopicClustering:
         self.is_fitted = False
 
     def fit_transform(self, texts):
-        cleaned_texts = [clean_text(t) for t in texts]
+        cleaned_texts = clean_text_list(texts)
         self.cleaned_texts = cleaned_texts
         
         self.tfidf_matrix = self.vectorizer.fit_transform(cleaned_texts)
@@ -266,7 +280,7 @@ class TopicClustering:
 
     def compute_silhouette_scores(self, texts, max_k=8):
         """Compute silhouette score for KMeans clustering for K in range [2, max_k]"""
-        cleaned_texts = [clean_text(t) for t in texts]
+        cleaned_texts = clean_text_list(texts)
         temp_vectorizer = TfidfVectorizer(ngram_range=(1, 2), max_features=1000)
         tfidf_matrix = temp_vectorizer.fit_transform(cleaned_texts)
         
@@ -278,3 +292,4 @@ class TopicClustering:
             scores[k] = float(score)
             
         return scores
+

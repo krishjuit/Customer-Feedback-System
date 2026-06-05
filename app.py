@@ -117,6 +117,19 @@ def train_sentiment_model(df, model_type, C, alpha):
     test_accuracy = model.train(df['review_text'], df['sentiment'])
     return model, test_accuracy
 
+# Cache topic clustering pipeline, labels, and coords
+@st.cache_resource
+def get_topic_clustering(texts, n_clusters):
+    pipeline = TopicClustering(n_clusters=n_clusters)
+    labels, coords = pipeline.fit_transform(texts)
+    return pipeline, labels, coords
+
+# Cache silhouette score calculation to prevent CPU/memory spikes
+@st.cache_data
+def run_silhouette_analysis(texts, max_k=8):
+    pipeline = TopicClustering()
+    return pipeline.compute_silhouette_scores(texts, max_k)
+
 # Load default dataset
 raw_df = load_data(DATASET_PATH)
 
@@ -177,8 +190,7 @@ if uploaded_file is not None and 'sentiment' in df.columns and df['sentiment'].n
 sentiment_model, test_accuracy = train_sentiment_model(train_df, selected_model_type, model_c, model_alpha)
 
 # Fit clustering on the active dataset
-clustering_pipeline = TopicClustering(n_clusters=n_clusters)
-cluster_labels, pca_coords = clustering_pipeline.fit_transform(df['review_text'])
+clustering_pipeline, cluster_labels, pca_coords = get_topic_clustering(df['review_text'], n_clusters)
 
 # Add cluster labels to our working dataframe
 df['cluster_label'] = cluster_labels
@@ -404,7 +416,7 @@ with tab2:
     if st.button("📊 Run Silhouette Score Analysis", type="secondary"):
         with st.spinner("Calculating Silhouette Scores for K = 2 to 8 (this may take a few seconds)..."):
             try:
-                scores = clustering_pipeline.compute_silhouette_scores(df['review_text'], max_k=8)
+                scores = run_silhouette_analysis(df['review_text'], max_k=8)
                 
                 # Plot setup
                 fig, ax = plt.subplots(figsize=(8, 3.5))
