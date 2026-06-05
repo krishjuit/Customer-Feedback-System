@@ -1,3 +1,13 @@
+---
+title: Smart Feedback Dashboard
+emoji: 📊
+colorFrom: indigo
+colorTo: purple
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
 # Smart Customer Feedback & Topic Clustering Dashboard
 
 A premium, interactive Natural Language Processing (NLP) dashboard built with **Streamlit** to analyze customer reviews, classify sentiment, group reviews into unsupervised topic clusters, and evaluate machine learning models.
